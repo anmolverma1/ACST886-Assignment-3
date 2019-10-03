@@ -1,0 +1,430 @@
+---
+title: "Untitled"
+author: "Anmol Verma (45679215)"
+date: "10/3/2019"
+output: html_document
+---
+---
+title: "Untitled"
+author: "Anmol Verma (45679215)"
+date: "10/3/2019"
+output: html_document
+##QUESTION 2 PART A
+```{r}
+x <- c()
+x[30:39] <- c(30:39)
+qx.d <- c()
+qx.d[30:39] <- c(0.00043,0.00042,0.00041,0.00040,0.00041,
+          0.00042,0.00043,0.00045,0.00049,0.00053)
+qx.w <- c()
+qx.w[30:39] <- c(0.250,0.200,0.175,0.150,0.150,0.150,0.150,0.150,0.150,1.000)
+```
+
+The dependent rate is calculated as follow:
+$$(aq)_x^d=q_x^d(1-0.5q_x^w)$$
+$$(aq)_x^w=q_x^w(1-0.5q_x^d)$$
+```{r}
+aqx.d <- c()
+aqx.d[30:39] <- qx.d[30:39]*(1-0.5*qx.w[30:39])
+aqx.d[30:39]
+```
+```{r}
+aqx.w <- c()
+aqx.w[30:39]<-qx.w[30:39]*(1-0.5*qx.d[30:39])
+aqx.w[30:39]
+```
+Then calculate $(al)_x$, $(ad)_x^d$ and $(ad)_x^w$.
+$$(ad)_x^d=(al)_x*(aq)_x^d$$
+$$(ad)_x^w=(al)_x*(aq)_x^w$$
+$$(al)_{x+1}=(al)_x-(ad)_x^d-(ad)_x^w$$
+```{r}
+al.x<-c()
+al.x[30]<-100000
+ad.x.d<-c()
+ad.x.w<-c()
+for (j in 30:40) {
+  ad.x.d[j]<-al.x[j]*aqx.d[j]
+  ad.x.w[j]<-al.x[j]*aqx.w[j]
+  al.x[j+1]<-al.x[j]-ad.x.d[j]-ad.x.w[j]
+}
+al.x[30:40]
+```
+
+```{r}
+## Double Decrement Table
+Decrement <- cbind(x[30:40],qx.d[30:40],qx.w[30:40],aqx.d[30:40],aqx.w[30:40],
+                   al.x[30:40],ad.x.d[30:40],ad.x.w[30:40])
+colnames(Decrement) <- c("x","qd","qw","(aq)d","(aq)w","(al)","(ad)d","(ad)w")
+Decrement
+```
+##### Possible cash flows for an in-force policy
+The vector of premium $P_t$ is
+```{r}
+## Premium
+Pt <- c()
+Pt[30:39]<-c(rep(5000,10))
+Pt[30:39]
+```
+
+```{r}
+## Premium based fee
+Prem_base_fee <- c()
+Prem_base_fee[30:39] <-c(Pt[30]*0.45,Pt[31:39]*0.01)
+Prem_base_fee[30:39]
+```
+The Buy/Sell margin is $0.5\%P_t(1-45\%)$ in year 1, $0.5\%P_t(1-1\%)$ thereafter.
+```{r}
+## Buy Sell Margin
+BS_Margin <- c()
+BS_Margin[30:39] <- c(0.005*Pt[30]*(1-0.45),0.005*Pt[31:39]*(1-0.01))
+BS_Margin[30:39]
+```
+The Invested premium $$IP_t=P_t - Premium\,based\,fee - Buy/Sell\,margin$$
+```{r}
+## Invested premium
+IP <- c()
+IP[30:39]<-Pt[30:39]-Prem_base_fee[30:39]-BS_Margin[30:39]
+IP[30:39]
+```
+
+$$VU_t=(VU_{t-1}+IP_t)(1+i)(1-m)\;for\;t=1,2,3,...$$
+```{r}
+## unit fund earning rate
+i <- 0.1
+## Asset fees
+m <- 0.003
+## Values of units
+VU <- c()
+for (j in 31:39) {
+  VU[30]<-IP[30]*(1+i)*(1-m)
+  VU[j]<-(VU[j-1]+IP[j])*(1+i)*(1-m)
+}
+VU[30:39]
+```
+The initial expense rate is 45%, the maintenance expense in year 1 is $58, and the inflation is 20%.
+For year 1, the initial expenses at the beginnig of year are $5000(45\%)+58$.
+The later expenses at the beginning of year are $58(1+20\%)^{t-1}$ p.a.
+```{r}
+# Expense
+t <- c(1:10)
+expense <- c()
+expense[30:39] <- c(Pt[30]*0.45+58,58*1.2^(t[2:10]-1))
+expense[30:39]
+```
+Death and Surrender Benefit are equal to the sell value of units held by the policy.
+```{r}
+Death_benefit <- c()
+Death_benefit[30:39] <- VU[30:39]
+Surrender_Benefit <- c()
+Surrender_Benefit[30:39] <- VU[30:39]
+```
+##### Expected Amounts per Initial Policy for the Unit Fund
+Expected Invested Premium at year t
+$$Expected\,Invested\,Premium(EIP_t)=IP_t\frac{(al)_{29+t}}{(al)_{30}}$$
+```{r}
+## Expected Invested Premium
+Exp_IP <- c()
+Exp_IP[30:39] <- IP[30:39]*al.x[30:39]/al.x[30]
+Exp_IP[30:39]
+```
+Expected value of unit at year t
+$$Expected\,Value\,of\,Units(EVU_t)=VU_t\frac{(al)_{30+t}}{(al)_{30}}$$
+```{r}
+## Expected value of unit
+Exp_VU <- c()
+Exp_VU[30:39] <- VU[30:39]*al.x[31:40]/al.x[30]
+Exp_VU[30:39]
+```
+Expected interest for unit fund at year t is $i(EVU_{t-1}+EIP_t)$
+```{r}
+## Expected interest for unit fund
+Exp_Interest <- c() 
+Exp_Interest[30:39] <- c(i*Exp_IP[30],i*(Exp_VU[30:38]+Exp_IP[31:39]))
+Exp_Interest[30:39]
+```
+
+```{r}
+Trans_to_Non_unit <- c()
+for (j in 31:39) {
+  Trans_to_Non_unit[30]<-Exp_IP[30]+Exp_Interest[30]-Exp_VU[30]
+  Trans_to_Non_unit[j]<-Exp_VU[j-1]+Exp_IP[j]+Exp_Interest[j]-Exp_VU[j]
+}
+Trans_to_Non_unit[30:39]
+```
+##### Table for Unit Fund
+```{r}
+year <- c(1:10)
+Unit_Fund <- cbind(year[1:10],IP[30:39],VU[30:39],
+                  Exp_IP[30:39],Exp_Interest[30:39],Exp_VU[30:39],
+                  Trans_to_Non_unit[30:39])
+colnames(Unit_Fund) <- c("year","Invested_Premium","Value_of_Units",
+                        "Exp_Invested_Prem","Exp_Interest","Exp_Value_of_Units",
+                        "Trans_to_Non_Unit")
+Unit_Fund
+```
+##### Expected Amounts per Initial Policy for the Non-unit Fund
+Expected premium-based fees at year t
+$$Expected\,premium\,based\,fees=premium\,based\,fees\,\frac{(al)_{29+t}}{(al)_{30}}$$
+```{r}
+## Expected premium-base fee
+Exp_prem_based_fee <- c()
+Exp_prem_based_fee[30:39] <- Prem_base_fee[30:39]*al.x[30:39]/al.x[30]
+Exp_prem_based_fee[30:39]
+```
+Expected Bul Sell Margin at year t
+$$Expected\,Buy\,Sell\,margins=Buy\,Sell\,margins\,\frac{(al)_{29+t}}{(al)_{30}}$$
+```{r}
+## Expected Buy Sell Margin
+Exp_BS_Margin <- c()
+Exp_BS_Margin[30:39] <- BS_Margin[30:39]*al.x[30:39]/al.x[30]
+Exp_BS_Margin[30:39]
+```
+Expected Expense at year t
+$$Expected\,Expenses=Expenses\,\frac{(al)_{29+t}}{(al)_{30}}$$
+```{r}
+## Expected Expense
+Exp_Expense <- c()
+Exp_Expense[30:39] <-expense[30:39]*al.x[30:39]/al.x[30]
+Exp_Expense[30:39]
+```
+
+```{r}
+## Expected Death Benefit
+Exp_Death_Benefit <- c()
+Exp_Death_Benefit[30:39] <-Death_benefit[30:39]*ad.x.d[30:39]/al.x[30]
+Exp_Death_Benefit[30:39]
+```
+
+```{r}
+## Expected Surrender Benefit
+Exp_Surrender_Benefit <- c()
+Exp_Surrender_Benefit[30:39] <- Surrender_Benefit[30:39]*ad.x.w[30:39]/al.x[30]
+Exp_Surrender_Benefit[30:39]
+```
+
+```{r}
+## Expected Interest for Non-unit fund
+i_NU <- 0.08
+Exp_Interst_NU <- c()
+Exp_Interst_NU[30:39] <- i_NU*(Exp_prem_based_fee[30:39]+Exp_BS_Margin[30:39]-
+                          Exp_Expense[30:39])
+Exp_Interst_NU[30:39]
+```
+##### Profit Signature
+The profit signature, which is he transfers of Non-unit fund are $$Expected\,premium\,based\,fees+Expected\,Buy\,Sell\,margins$$
+$$-Expected\,Expenses+Expected\,Interest+Expected\,transfer\,from\,Unit\,Fund$$
+$$-Expected\,death\,benefits-Expected\,surrender\,benefits$$
+```{r}
+## Profit Signature
+Transfer <- c()
+Transfer[30:39] <- Exp_prem_based_fee[30:39]+Exp_BS_Margin[30:39]-
+                   Exp_Expense[30:39]+Exp_Interst_NU[30:39]+
+                   Trans_to_Non_unit[30:39]-Exp_Death_Benefit[30:39]-
+                   Exp_Surrender_Benefit[30:39]
+Transfer[30:39]
+```
+##### Table for Non-unit Fund
+```{r}
+Non_Unit_Fund <- cbind(year[1:10],Prem_base_fee[30:39],BS_Margin[30:39],
+                  expense[30:39],Death_benefit[30:39],Exp_prem_based_fee[30:39],
+                  Exp_BS_Margin[30:39],Exp_Expense[30:39],Exp_Interst_NU[30:39],
+                  Trans_to_Non_unit[30:39],Exp_Death_Benefit[30:39],
+                  Exp_Surrender_Benefit[30:39],Transfer[30:39])
+colnames(Non_Unit_Fund) <- c("year","Prem-Based_Fee","BS_Margin",
+                        "Expense","Death/Sur_Benefit","Exp_Prem_Based_Fee",
+                        "Exp_BS_Margin","Exp_Expense","Exp_Interest",
+                        "Trans_from_Unit","Exp_Death","Exp_Sur",
+                        "Transfer")
+Non_Unit_Fund
+```
+### Expected present value of transfer at 12.5%
+$$EPV=\sum_{t=1}^{10}\frac{Transfer_t}{(1+12.5\%)^{t}}$$
+```{r}
+## Expected PV of transfer
+t <- c(1:10)
+EPV_Transfer <- sum(Transfer[30:39]/1.125^t)
+EPV_Transfer
+```
+The expcted present value of the transfer at 12.5% is about 34.67.
+
+## QUESTION 2 PART(b) 
+Create a function where the variable is the policy value at year 9, and the output is the transfer value at year 10. We want to change the policy value at year 9 such that the transfer value at year 10 is zero. To achieve that, uniroot function is used.
+```{r}
+## Create a function
+## input is the new policy value at year 9
+## output is the transfer value at year 10
+find_policy_value <- function(target){
+## ------------------------------------------------------------------------
+x <- c()
+x[30:39] <- c(30:39)
+qx.d <- c()
+qx.d[30:39] <- c(0.00043,0.00042,0.00041,0.00040,0.00041,
+          0.00042,0.00043,0.00045,0.00049,0.00053)
+qx.w <- c()
+qx.w[30:39] <- c(0.250,0.200,0.175,0.150,0.150,0.150,0.150,0.150,0.150,1.000)
+## ------------------------------------------------------------------------
+aqx.d <- c()
+aqx.d[30:39] <- qx.d[30:39]*(1-0.5*qx.w[30:39])
+## ------------------------------------------------------------------------
+aqx.w <- c()
+aqx.w[30:39]<-qx.w[30:39]*(1-0.5*qx.d[30:39])
+## ------------------------------------------------------------------------
+al.x<-c()
+al.x[30]<-100000
+ad.x.d<-c()
+ad.x.w<-c()
+for (j in 30:40) {
+  ad.x.d[j]<-al.x[j]*aqx.d[j]
+  ad.x.w[j]<-al.x[j]*aqx.w[j]
+  al.x[j+1]<-al.x[j]-ad.x.d[j]-ad.x.w[j]
+}
+## ------------------------------------------------------------------------
+## Premium
+Pt <- c()
+Pt[30:39]<-c(rep(5000,10))
+## ------------------------------------------------------------------------
+## Premium based fee
+Prem_base_fee <- c()
+Prem_base_fee[30:39] <-c(Pt[30]*0.45,Pt[31:39]*0.01)
+## ------------------------------------------------------------------------
+## Buy Sell Margin
+BS_Margin <- c()
+BS_Margin[30:39] <- c(0.005*Pt[30]*(1-0.45),0.005*Pt[31:39]*(1-0.01))
+## ------------------------------------------------------------------------
+## Invested premium
+IP <- c()
+IP[30:39]<-Pt[30:39]-Prem_base_fee[30:39]-BS_Margin[30:39]
+## ------------------------------------------------------------------------
+## unit fund earning rate
+i <- 0.1
+## Asset fees
+m <- 0.003
+## Values of units
+VU <- c()
+for (j in 31:39) {
+  VU[30]<-IP[30]*(1+i)*(1-m)
+  VU[j]<-(VU[j-1]+IP[j])*(1+i)*(1-m)
+}
+## this value is what we want to change
+VU[38] <- target
+## ------------------------------------------------------------------------
+# Expense
+t <- c(1:10)
+expense <- c()
+expense[30:39] <- c(Pt[30]*0.45+58,58*1.2^(t[2:10]-1))
+## ------------------------------------------------------------------------
+Death_benefit <- c()
+Death_benefit[30:39] <- VU[30:39]
+Surrender_Benefit <- c()
+Surrender_Benefit[30:39] <- VU[30:39]
+## ------------------------------------------------------------------------
+## Expected Invested Premium
+Exp_IP <- c()
+Exp_IP[30:39] <- IP[30:39]*al.x[30:39]/al.x[30]
+## ------------------------------------------------------------------------
+## Expected value of unit
+Exp_VU <- c()
+Exp_VU[30:39] <- VU[30:39]*al.x[31:40]/al.x[30]
+## ------------------------------------------------------------------------
+## Expected interest for unit fund
+Exp_Interest <- c() 
+Exp_Interest[30:39] <- c(i*Exp_IP[30],i*(Exp_VU[30:38]+Exp_IP[31:39]))
+## ------------------------------------------------------------------------
+Trans_to_Non_unit <- c()
+for (j in 31:39) {
+  Trans_to_Non_unit[30]<-Exp_IP[30]+Exp_Interest[30]-Exp_VU[30]
+  Trans_to_Non_unit[j]<-Exp_VU[j-1]+Exp_IP[j]+Exp_Interest[j]-Exp_VU[j]
+}
+## ------------------------------------------------------------------------
+## Expected premium-base fee
+Exp_prem_based_fee <- c()
+Exp_prem_based_fee[30:39] <- Prem_base_fee[30:39]*al.x[30:39]/al.x[30]
+## ------------------------------------------------------------------------
+## Expected Buy Sell Margin
+Exp_BS_Margin <- c()
+Exp_BS_Margin[30:39] <- BS_Margin[30:39]*al.x[30:39]/al.x[30]
+## ------------------------------------------------------------------------
+## Expected Expense
+Exp_Expense <- c()
+Exp_Expense[30:39] <-expense[30:39]*al.x[30:39]/al.x[30]
+## ------------------------------------------------------------------------
+## Expected Death Benefit
+Exp_Death_Benefit <- c()
+Exp_Death_Benefit[30:39] <-Death_benefit[30:39]*ad.x.d[30:39]/al.x[30]
+## ------------------------------------------------------------------------
+## Expected Surrender Benefit
+Exp_Surrender_Benefit <- c()
+Exp_Surrender_Benefit[30:39] <- Surrender_Benefit[30:39]*ad.x.w[30:39]/al.x[30]
+## ------------------------------------------------------------------------
+## Expected Interest for Non-unit fund
+i_NU <- 0.08
+Exp_Interst_NU <- c()
+Exp_Interst_NU[30:39] <- i_NU*(Exp_prem_based_fee[30:39]+Exp_BS_Margin[30:39]-
+                          Exp_Expense[30:39])
+## ------------------------------------------------------------------------
+## Profit Signature
+Transfer <- c()
+Transfer[30:39] <- Exp_prem_based_fee[30:39]+Exp_BS_Margin[30:39]-
+                   Exp_Expense[30:39]+Exp_Interst_NU[30:39]+
+                   Trans_to_Non_unit[30:39]-Exp_Death_Benefit[30:39]-
+                   Exp_Surrender_Benefit[30:39]
+Transfer[39]
+}
+uniroot(find_policy_value,c(60000,70000))
+```
+
+```{r}
+## check whether the new policy value will make the transfer value at year 10 zero
+find_policy_value(67319.02)
+```
+The new policy value at year 9 should be $67319.02. 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+QUESTION 2 PART C
+
+The Expected Present Value of transfer is reduced as a result of the zeroisation, becasue money has been held back in the Unit Fund at year 9 instead of being released to the shareholders to give a zero transfer at year 10. Since these additional funds earn only 10% p.a. interest in the Unit Fund, whereas the discount rate is 12.5%, overall the business is now less profitable.
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
